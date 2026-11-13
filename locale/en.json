@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "ECNU vision fallback",
+    "description": "Adds image reading to a text-only enterprise model: a vision model describes the image and the main model receives untrusted text evidence."
+  }
+}

@@ -1,0 +1,17 @@
+# Installed by the bundle patch: one row, ECNU defaults pre-filled.
+- insert:
+    - id: chatecnu-vision
+      name: '@eduwork/dsh-provider-vision-fallback'
+      config:
+          enabled: true
+          baseURL: "https://chat.ecnu.edu.cn/open/api/v1"
+          baseURLEnv: "CHATECNU_SERVICE_BASE_URL"
+          credentialRef: "EDUWORK_API_KEY"
+          oidcProfileId: "ecnu"
+          provider: "chatecnu"
+          model: "ecnu-plus"
+          maxConcurrentRequests: 1
+          maxRetries: 2
+          maxAnalysisTokens: 2048
+          maxEvidenceChars: 12000
+          maxRequestEvidenceChars: 64000

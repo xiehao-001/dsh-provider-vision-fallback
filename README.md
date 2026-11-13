@@ -1,0 +1,36 @@
+# Enterprise image-input fallback
+
+[简体中文](README.md)
+
+A provider-boundary plugin adding aggregate `image` input capability to text-only enterprise routes. It preserves original attachments in DSH history and rewrites only the final model request: a configured vision specialist observes the image, and the primary model receives explicitly untrusted textual evidence.
+
+## Configuration and native images
+
+The ECNU catalog declares `ecnu-max` with `input: ["text"]`; by default, `ecnu-plus` observes images and supplies textual evidence. Native image models such as `ecnu-plus` receive images directly without calling the specialist. Native request failures are not hidden by silently switching to text evidence. Routing follows the configured native capability rather than guessing from model names.
+
+Fallback applies by default only to text-only models under the configured provider. The distributor can set `"features": { "visionFallback": false }` in `config/eduwork.jsonc`, exit through the tray and restart to disable it; `true` restores it. The current Electron edition supports separate configuration updates. The option does not install the plugin into an unextended public edition and does not affect a model's native image input.
+
+Direct DSH/Web compositions can set `config.enabled: false` or `EDUWORK_VISION_FALLBACK=false`. `config.model` (default `ecnu-plus`), service URL and `credentialRef` (default `EDUWORK_API_KEY`) select the specialist. `config.provider` limits assistance to that enterprise adapter route, not arbitrary third-party providers.
+
+Electron reads model capabilities and plugin options from the single `config/eduwork.jsonc`; publisher updates preserve manual edits. Set `plugins.chatecnu-vision.baseURL` to change the specialist endpoint, which must match the selected account's discovered model resource. With `oidcProfileId`, the Host sends requests using scoped Access Tokens without exposing tokens to the plugin; otherwise a personal API Key is used. Migration from Key Binding requires signing in again. Public EduWork and the standalone plugin contain no institution model catalog; deployments supply the native `input` declarations.
+
+## Processing boundaries
+
+- `plugins.chatecnu-vision.maxConcurrentRequests` limits the configured specialist to 1–64 concurrent requests (default 1). Images and conversations share the plugin instance's queue. Waiting is cancellable; stopping the plugin aborts its requests.
+- `plugins.chatecnu-vision.maxRetries` allows 0–5 HTTP 429 retries (default 2). Retries honor `Retry-After` or use exponential backoff. A requested wait above 60 seconds is reported without retrying early. Analysis and retries share a 180-second timeout starting after admission; queue time is excluded.
+- This queue covers only the specialist, independently of the main model. Direct chat and other clients remain outside it. HTTP 429 may also indicate a service quota; persistent failures suggest checking concurrency and quota, and failed results are never stored as evidence.
+
+- Mounted once per institution bundle below Agent, Skill and Tool layers; decisions use only the selected model's native `inputModalities`.
+- Native multimodal models receive unchanged images; text-only models receive specialist evidence without another Agent-visible tool.
+- One context-independent observation is persisted under `DSH_HOME` per immutable attachment, specialist model and analysis-policy version, reused across retries, restarts and session forks.
+- Progress is logged rather than appended as `user/message`, preventing operational notices from becoming later model-visible user instructions.
+- Per-image and accumulated evidence are bounded. New evidence wins when the text budget is exceeded; old images become deterministic reattachment placeholders.
+- Only canonical DSH messages and rich tool-result content blocks are consumed. The plugin neither scans project paths nor exposes its internal fallback route to callers.
+
+## Install
+
+```bash
+dsh plugin --profile web add https://github.com/xiehao-001/dsh-provider-vision-fallback
+```
+
+The bundle patch inserts one row (`id: chatecnu-vision`) and pre-fills the ECNU defaults, so sign-in, base URL and profile id work without extra configuration. Adjust `oidcProfileId` if your organization profile is not named `ecnu`.
